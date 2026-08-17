@@ -75,7 +75,22 @@ else
 
 builder.Services.AddSingleton<SourceExecutor>();
 builder.Services.AddSingleton<IFeedSnapshotStore, InMemoryFeedSnapshotStore>();
-builder.Services.AddSingleton<IImpressionLog, NoOpImpressionLog>();
+
+if (builder.Configuration.GetValue("ClickHouse:Enabled", true))
+{
+    builder.Services.AddHttpClient(ClickHouseImpressionLog.HttpClientName, client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["ClickHouse:BaseUrl"] ?? "http://localhost:8123");
+        client.Timeout = TimeSpan.FromSeconds(5);
+    });
+    builder.Services.AddSingleton<ClickHouseImpressionLog>();
+    builder.Services.AddSingleton<IImpressionLog>(sp => sp.GetRequiredService<ClickHouseImpressionLog>());
+    builder.Services.AddHostedService(sp => sp.GetRequiredService<ClickHouseImpressionLog>());
+}
+else
+{
+    builder.Services.AddSingleton<IImpressionLog, NoOpImpressionLog>();
+}
 
 if (!rankingEnabled)
 {
