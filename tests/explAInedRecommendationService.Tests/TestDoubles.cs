@@ -53,6 +53,43 @@ public sealed class FakeArticleClient : IArticleClient
     }
 }
 
+public sealed class FakeFaissClient : IFaissClient
+{
+    private readonly Dictionary<string, IReadOnlyList<string>> _hits = new(StringComparer.Ordinal);
+
+    public bool Faulted { get; set; }
+
+    public TimeSpan ArtificialDelay { get; set; } = TimeSpan.Zero;
+
+    public int? LastTopK { get; private set; }
+
+    /// <summary>Users without a seed have no embedding — the client returns null, as 204 does.</summary>
+    public void Seed(string userId, params string[] ids) => _hits[userId] = ids;
+
+    public void Clear()
+    {
+        _hits.Clear();
+        Faulted = false;
+        ArtificialDelay = TimeSpan.Zero;
+        LastTopK = null;
+    }
+
+    public async Task<FaissSearchResult?> SearchAsync(string userId, int topK, CancellationToken ct)
+    {
+        LastTopK = topK;
+
+        if (ArtificialDelay > TimeSpan.Zero) await Task.Delay(ArtificialDelay, ct);
+        if (Faulted) throw new HttpRequestException("fake faiss client faulted");
+
+        if (!_hits.TryGetValue(userId, out var ids)) return null;
+
+        var ranked = ids.Take(topK).ToList();
+        var scores = ranked.Select((_, index) => 1d - index * 0.01).ToList();
+
+        return new FaissSearchResult(ranked, scores);
+    }
+}
+
 public sealed class FakeCandidateSource : ICandidateSource
 {
     private readonly IReadOnlyList<string> _ids;
