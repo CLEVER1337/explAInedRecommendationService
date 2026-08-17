@@ -40,6 +40,16 @@ builder.Services.AddHttpClient<IArticleClient, ArticleHttpClient>(client =>
     client.Timeout = TimeSpan.FromSeconds(2);
 });
 
+var faissEnabled = builder.Configuration.GetValue("Faiss:Enabled", true);
+if (faissEnabled)
+{
+    builder.Services.AddHttpClient<IFaissClient, FaissHttpClient>(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["Faiss:BaseUrl"] ?? "http://localhost:8001");
+        client.Timeout = TimeSpan.FromSeconds(2);
+    });
+}
+
 var cacheProvider = builder.Configuration["Cache:Provider"] ?? "Redis";
 if (string.Equals(cacheProvider, "Memory", StringComparison.OrdinalIgnoreCase))
 {
@@ -60,6 +70,12 @@ builder.Services.AddSingleton<IRanker, NullRanker>();
 
 builder.Services.AddSingleton<TrendingCandidateSource>();
 builder.Services.AddSingleton<ICandidateSource>(sp => sp.GetRequiredService<TrendingCandidateSource>());
+
+if (faissEnabled)
+{
+    builder.Services.AddSingleton<FaissCandidateSource>();
+    builder.Services.AddSingleton<ICandidateSource>(sp => sp.GetRequiredService<FaissCandidateSource>());
+}
 
 builder.Services.AddSingleton<IFeedStrategy, CandidateFeedStrategy>();
 builder.Services.AddSingleton<IFeedStrategy, TrendingFeedStrategy>();
