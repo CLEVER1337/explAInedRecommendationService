@@ -7,9 +7,13 @@ public class RecommendationWebApplicationFactory : WebApplicationFactory<Program
 {
     public FakeArticleClient ArticleClient { get; } = new();
 
+    public FakeFaissClient FaissClient { get; } = new();
+
     public InMemoryRecommendationStore Store => Services.GetRequiredService<InMemoryRecommendationStore>();
 
     public TestSnapshotStore Snapshots { get; } = new();
+
+    public IRanker? Ranker { get; init; }
 
     protected override void ConfigureWebHost(IWebHostBuilder builder)
     {
@@ -31,6 +35,9 @@ public class RecommendationWebApplicationFactory : WebApplicationFactory<Program
         {
             Replace<IArticleClient>(services, ArticleClient);
 
+            // Without this the FAISS source would call a live :8001 in every test.
+            Replace<IFaissClient>(services, FaissClient);
+
             foreach (var descriptor in services
                          .Where(d => d.ServiceType == typeof(StackExchange.Redis.IConnectionMultiplexer))
                          .ToList())
@@ -43,6 +50,9 @@ public class RecommendationWebApplicationFactory : WebApplicationFactory<Program
             Replace<IRecommendationStore>(services, store);
 
             Replace<IFeedSnapshotStore>(services, Snapshots);
+
+            Replace<IRanker>(services, Ranker ?? new NullRanker());
+            Replace<IImpressionLog>(services, new NoOpImpressionLog());
         });
     }
 

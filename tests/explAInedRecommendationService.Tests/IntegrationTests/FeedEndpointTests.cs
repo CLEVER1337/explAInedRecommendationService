@@ -19,6 +19,7 @@ public class FeedEndpointTests : IClassFixture<RecommendationWebApplicationFacto
     {
         _factory = factory;
         _factory.ArticleClient.Clear();
+        _factory.FaissClient.Clear();
         _factory.Snapshots.Clear();
         _factory.Store.Faulted = false;
         _factory.Store.SeedTrending();
