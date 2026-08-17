@@ -2,6 +2,8 @@ public interface IRecommendationStore
 {
     Task<IReadOnlyList<string>> GetTrendingAsync(int count, CancellationToken ct);
 
+    Task<IReadOnlyList<string>> GetAlsCandidatesAsync(string userId, int count, CancellationToken ct);
+
     Task<IReadOnlySet<string>> GetViewedSubsetAsync(string userId, IReadOnlyCollection<string> candidateIds, CancellationToken ct);
 
     Task<IReadOnlyList<string>?> GetFeedPageSetAsync(string userId, string feedId, CancellationToken ct);

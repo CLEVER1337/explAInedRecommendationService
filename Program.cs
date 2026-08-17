@@ -77,6 +77,12 @@ if (faissEnabled)
     builder.Services.AddSingleton<ICandidateSource>(sp => sp.GetRequiredService<FaissCandidateSource>());
 }
 
+if (builder.Configuration.GetValue("Als:Enabled", true))
+{
+    builder.Services.AddSingleton<AlsCandidateSource>();
+    builder.Services.AddSingleton<ICandidateSource>(sp => sp.GetRequiredService<AlsCandidateSource>());
+}
+
 builder.Services.AddSingleton<IFeedStrategy, CandidateFeedStrategy>();
 builder.Services.AddSingleton<IFeedStrategy, TrendingFeedStrategy>();
 builder.Services.AddSingleton<IFeedStrategy, RecentFeedStrategy>();

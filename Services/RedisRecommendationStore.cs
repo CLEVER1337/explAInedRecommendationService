@@ -16,6 +16,15 @@ public sealed class RedisRecommendationStore : IRecommendationStore
         return values.Select(v => v.ToString()).Where(v => !string.IsNullOrEmpty(v)).ToList();
     }
 
+    public async Task<IReadOnlyList<string>> GetAlsCandidatesAsync(
+        string userId, int count, CancellationToken ct)
+    {
+        var db = Database();
+        var values = await db.ListRangeAsync(AlsKey(userId), 0, count - 1);
+
+        return values.Select(v => v.ToString()).Where(v => !string.IsNullOrEmpty(v)).ToList();
+    }
+
     public async Task<IReadOnlySet<string>> GetViewedSubsetAsync(
         string userId, IReadOnlyCollection<string> candidateIds, CancellationToken ct)
     {
@@ -64,6 +73,8 @@ public sealed class RedisRecommendationStore : IRecommendationStore
 
         return _mux.GetDatabase();
     }
+
+    private static RedisKey AlsKey(string userId) => $"rec:user_als_candidates:{userId}";
 
     private static RedisKey ViewedKey(string userId) => $"rec:user_viewed:{userId}";
 
