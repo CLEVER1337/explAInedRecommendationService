@@ -50,6 +50,16 @@ if (faissEnabled)
     });
 }
 
+var rankingEnabled = builder.Configuration.GetValue("Ranking:Enabled", true);
+if (rankingEnabled)
+{
+    builder.Services.AddHttpClient<IRanker, RankingHttpClient>(client =>
+    {
+        client.BaseAddress = new Uri(builder.Configuration["Ranking:BaseUrl"] ?? "http://localhost:8002");
+        client.Timeout = TimeSpan.FromSeconds(2);
+    });
+}
+
 var cacheProvider = builder.Configuration["Cache:Provider"] ?? "Redis";
 if (string.Equals(cacheProvider, "Memory", StringComparison.OrdinalIgnoreCase))
 {
@@ -66,7 +76,11 @@ else
 builder.Services.AddSingleton<SourceExecutor>();
 builder.Services.AddSingleton<IFeedSnapshotStore, InMemoryFeedSnapshotStore>();
 builder.Services.AddSingleton<IImpressionLog, NoOpImpressionLog>();
-builder.Services.AddSingleton<IRanker, NullRanker>();
+
+if (!rankingEnabled)
+{
+    builder.Services.AddSingleton<IRanker, NullRanker>();
+}
 
 builder.Services.AddSingleton<TrendingCandidateSource>();
 builder.Services.AddSingleton<ICandidateSource>(sp => sp.GetRequiredService<TrendingCandidateSource>());
