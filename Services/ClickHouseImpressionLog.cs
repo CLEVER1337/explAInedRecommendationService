@@ -17,6 +17,16 @@ public sealed class ClickHouseImpressionLog : IImpressionLog, IHostedService, IA
     private CancellationTokenSource? _stopping;
     private Task? _pump;
 
+    // This instance is registered three times — as itself, as IImpressionLog, and as a
+    // hosted service — and the last two go through factory delegates. The container tracks
+    // what a factory returns for disposal on each of those, so it ends up holding the same
+    // object more than once and calls DisposeAsync more than once on shutdown.
+    //
+    // Disposing twice is meant to be safe, so the fix belongs here rather than in the
+    // registrations: without this flag the second call reaches _stopping.Cancel() after
+    // _stopping.Dispose() and throws ObjectDisposedException out of shutdown.
+    private bool _disposed;
+
     public ClickHouseImpressionLog(
         IHttpClientFactory clients, IConfiguration configuration, ILogger<ClickHouseImpressionLog> logger)
     {
@@ -126,6 +136,13 @@ public sealed class ClickHouseImpressionLog : IImpressionLog, IHostedService, IA
 
     public async ValueTask DisposeAsync()
     {
+        if (_disposed)
+        {
+            return;
+        }
+
+        _disposed = true;
+
         _stopping?.Cancel();
         _stopping?.Dispose();
 
