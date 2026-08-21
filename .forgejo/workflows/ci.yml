@@ -63,11 +63,9 @@ jobs:
           ls /src
 
       - name: Test
-        # The test project, not the solution. `explAInedRecommendationService.sln` is matched by `*.sln`
-        # in this repository's .gitignore, so it is not in git and a fresh clone does not
-        # have it — MSB1009 is what that looks like. Both .csproj files are tracked, the
-        # test one references the service one, so this builds and runs exactly the same
-        # code the solution would have.
+        # The solution, which is what CLAUDE.md documents and what covers both the service
+        # project and its tests. It is in git — `*.sln` used to be in this repository's
+        # .gitignore, which is why a clone had no solution and dotnet answered MSB1009.
         #
         # The tests use Database:Provider=InMemory and Cache:Provider=Memory, so nothing
         # here needs PostgreSQL, Redis or Kafka to be reachable. Worth keeping: the moment
@@ -75,4 +73,4 @@ jobs:
         run: |
           set -eu
           cd /src
-          dotnet test tests/explAInedRecommendationService.Tests/explAInedRecommendationService.Tests.csproj --nologo --verbosity minimal
+          dotnet test explAInedRecommendationService.sln --nologo --verbosity minimal
