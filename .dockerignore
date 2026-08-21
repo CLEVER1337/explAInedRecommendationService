@@ -1,0 +1,17 @@
+# Host build output must never enter the context: obj/project.assets.json records absolute
+# host paths and would make the in-container restore disagree with itself.
+bin/
+obj/
+**/bin/
+**/obj/
+
+# Excluded from the csproj anyway (<Compile Remove="tests\**" />) — keep them out of the
+# build context so they cost nothing.
+tests/
+
+.vs/
+.idea/
+*.user
+*.sln.docstates
+Dockerfile
+.dockerignore
