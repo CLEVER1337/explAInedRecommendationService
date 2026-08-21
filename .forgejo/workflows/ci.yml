@@ -63,10 +63,16 @@ jobs:
           ls /src
 
       - name: Test
-        # The tests run against Database:Provider=InMemory and Cache:Provider=Memory, so
-        # nothing here needs PostgreSQL, Redis or Kafka to be reachable. Worth keeping: the
-        # moment a test wants a real database, this job needs services and stops being cheap.
+        # The test project, not the solution. `explAInedRecommendationService.sln` is matched by `*.sln`
+        # in this repository's .gitignore, so it is not in git and a fresh clone does not
+        # have it — MSB1009 is what that looks like. Both .csproj files are tracked, the
+        # test one references the service one, so this builds and runs exactly the same
+        # code the solution would have.
+        #
+        # The tests use Database:Provider=InMemory and Cache:Provider=Memory, so nothing
+        # here needs PostgreSQL, Redis or Kafka to be reachable. Worth keeping: the moment
+        # a test wants a real database, this job needs services and stops being cheap.
         run: |
           set -eu
           cd /src
-          dotnet test explAInedRecommendationService.sln --nologo --verbosity minimal
+          dotnet test tests/explAInedRecommendationService.Tests/explAInedRecommendationService.Tests.csproj --nologo --verbosity minimal
