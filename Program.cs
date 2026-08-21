@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Prometheus;
 using StackExchange.Redis;
+using System.Net.Http.Headers;
 using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -82,6 +83,20 @@ if (builder.Configuration.GetValue("ClickHouse:Enabled", true))
     {
         client.BaseAddress = new Uri(builder.Configuration["ClickHouse:BaseUrl"] ?? "http://localhost:8123");
         client.Timeout = TimeSpan.FromSeconds(5);
+
+        // Only when a username is configured. A ClickHouse whose `default` user has no
+        // password and accepts remote connections needs none, which is why this used to send
+        // nothing at all — but any shared instance pins `default` to loopback and gives the
+        // application its own account, and there the write fails with 516 AUTHENTICATION_FAILED.
+        // The impression log swallows that, so the symptom is an empty feed_impressions table
+        // rather than an error anyone sees.
+        var user = builder.Configuration["ClickHouse:Username"];
+        if (!string.IsNullOrEmpty(user))
+        {
+            var password = builder.Configuration["ClickHouse:Password"] ?? string.Empty;
+            var credentials = Convert.ToBase64String(Encoding.UTF8.GetBytes($"{user}:{password}"));
+            client.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Basic", credentials);
+        }
     });
     builder.Services.AddSingleton<ClickHouseImpressionLog>();
     builder.Services.AddSingleton<IImpressionLog>(sp => sp.GetRequiredService<ClickHouseImpressionLog>());
