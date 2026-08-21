@@ -7,7 +7,10 @@ using System.Text;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Configuration.AddJsonFile("appsettings.json");
+// No AddJsonFile here. CreateBuilder has already loaded appsettings.json, and adding it a
+// second time appends it as the *last* configuration provider — above environment variables,
+// which are registered before it. Every ConnectionStrings__* and Jwt__* the deployment sets
+// was then silently ignored and this service dialled localhost.
 
 builder.Services.AddControllersWithViews();
 
